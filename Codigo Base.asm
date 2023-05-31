@@ -19,7 +19,6 @@ $INCLUDE (8051.MCU)
     postescaler                  equ           R2 
     cont_muestras             equ           R3
     estado_TX                   equ            R7
-    ;postescaler_1              equ           R6
     punt_M_1                     equ           R4
     punt_M_2                     equ          R5
     punt_M_3             equ          R1
@@ -46,8 +45,8 @@ $INCLUDE (8051.MCU)
 Inicio:
         mov punt_M, #1Bh
         mov DPTR, #Tabla_7seg
-        ;mov lamp1, #40h
-        ;mov lamp2, #40h
+        mov lamp1, #40h
+        mov lamp2, #40h
         mov postescaler, #40
         mov cont_muestras, #0
     mov punt_M_3, #0
@@ -68,7 +67,6 @@ Inicio:
 ;===============Interruptions===============
 
 IT_T0:
-      ;  jnb EX0, led_blink
         mov TH0, #high(15536)
         mov TL0, #low(15536)
         djnz postescaler, salir
@@ -76,23 +74,18 @@ IT_T0:
         mov TH0, #high(15536)
         mov TL0, #low(15536)
         setb START_ADC
+    mov DPTR, #Tabla_7seg
         nop
-    nop
     nop
         clr START_ADC
 salir: reti
-
-;led_blink:
-       ; djnz postescaler_1, outside
-        ;cpl led 
-;outside:reti 
 
 IT_AD:
         mov A, ADCDATA
         mov B, #51
         mul AB 
         mov A, B 
-    mov salva, A
+    push ACC
         mov @R0, A
         mov B, #10
         div AB 
@@ -101,11 +94,11 @@ IT_AD:
         mov A, B 
         movc A, @A+DPTR
         mov lamp2, A
-        mov A, salva
+        pop ACC
         inc punt_M
         inc cont_muestras
         clr c 
-        cjne cont_muestras, #100, comp1
+        cjne cont_muestras, #2, comp1
         setb Ren
     clr Ex0
         reti
@@ -165,68 +158,54 @@ comp3:
        out: reti
 ;=======================================================================================
 IT_PS: 
-        jnb RI, TX
-    clr RI
-        mov A, SBUF
-        cjne A, #1Ah, fuera
-        setb F0
- fuera: reti
+       jnb RI, TX
+       clr RI
+       mov A, SBUF
+       cjne A, #1Ah, fuera
+       setb F0
+    fuera: reti
 
-TX:
-     clr TI
-        cjne estado_TX, #1, ver_2 
-        clr led
-    push ACC
-        mov DPTR, #Tabla_M1
-        mov A, punt_M_1
-    inc punt_M_1
-        movc A, @A+DPTR
-        jz basta
-    mov SBUF, A
-    pop ACC
-    reti
-basta:  ;pop ACC
-        mov punt_M_1, #0
-        reti
-    ver_2:
-        cjne estado_TX, #2, ver_3 
-    setb led
-       push ACC
-       mov A, punt_M_2
-       inc punt_M_2
-       mov DPTR, #Tabla_M2
+   TX:
+           clr TI
+          cjne estado_TX, #1, ver_2 
+          clr led
+          mov DPTR, #Tabla_M1
+          mov A, punt_M_1
+          inc punt_M_1
+          movc A, @A+DPTR
+          jz basta
+          mov SBUF, A
+          reti
+      basta:mov punt_M_1, #0
+          reti
+       ver_2:
+       cjne estado_TX, #2, ver_3 
+       setb led
+          mov A, punt_M_2
+          inc punt_M_2
+          mov DPTR, #Tabla_M2
+          movc A, @A+DPTR
+          jz basta1 
+          mov SBUF, A
+          reti
+    basta1: mov punt_M_2, #0
+          reti
+
+
+
+   ver_3:
+       cjne estado_TX, #3 , fuera1
+       setb led
+       mov A, punt_M_3
+       inc punt_M_3
+       mov DPTR, #Tabla_M3
        movc A, @A+DPTR
-       jz basta1 
+       jz fuera1
        mov SBUF, A
-       pop ACC 
        reti
- basta1:  ;pop ACC
-           mov punt_M_2, #0
+   fuera1:mov punt_M_3, #0
            reti
 
-
-
-ver_3:
-        cjne estado_TX, #3 , fuera1
-    setb led
-    push ACC
-    mov A, punt_M_3
-    inc punt_M_3
-        mov DPTR, #Tabla_M3
-        movc A, @A+DPTR
-        jz fuera1
-    mov SBUF, A
-    pop ACC
-    reti
-fuera1:  ;pop ACC
-          mov punt_M_3, #0
-          reti
-;led_blink1:
-;        clr TR0
-;   clr Ex0
-;   mov postescaler_1, #20
-;   setb TR0
- ;       reti
 ;===========================================
 ;==================Tables===================
 Tabla_7seg: db 0C0h, 0F9h, 0A4h, 0B0h, 99h, 92h, 82h, 0F8h, 80h, 90h
