@@ -78,7 +78,6 @@ $INCLUDE (8051.MCU)
             cpl led
 seguir: djnz postescaler, salir
             mov postescaler, #4
-            ;mov postescaler_led, #10
             mov TH0, #high(15536)
             mov TL0, #low(15536)
             setb START_ADC
@@ -170,7 +169,7 @@ seguir: djnz postescaler, salir
            jnb RI, TX
            clr RI
            mov A, SBUF
-           cjne A, #1Ah, fuera
+           cjne A, #49, fuera
            setb F0
             fuera: reti
 
